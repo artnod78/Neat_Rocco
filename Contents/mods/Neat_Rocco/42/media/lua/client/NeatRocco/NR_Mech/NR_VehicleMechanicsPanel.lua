@@ -1,13 +1,20 @@
 -- NR_VehicleMechanicsPanel.lua
 -- NeatUI-styled replacement for ISVehicleMechanics (Vehicle Mechanics window).
 -- Vanilla logic preserved 1:1 — visual layer only.
+-- Derives from ISVehicleMechanics so 3rd-party hooks (AutoMechanics, BAM, etc.)
+-- on ISVehicleMechanics.<method> are resolved dynamically via Lua inheritance,
+-- regardless of mod load order.
 
 require "NeatRocco/NR_Utils/NR_BasePanel"
 require "NeatRocco/NR_Utils/NR_ScrollingList"
 require "NeatRocco/NR_Utils/NR_ResizeWidget"
 require "NeatRocco/NR_Config"
 
-NR_VehicleMechanicsPanel = NR_BasePanel:derive("NR_VehicleMechanicsPanel")
+-- Derives from ISVehicleMechanics so any mod patch on ISVehicleMechanics.<method>
+-- (doPartContextMenu, initParts, renderPartDetail, etc.) is resolved naturally via
+-- Lua inheritance. Constructor still uses ISPanelJoypad.new to bypass the vanilla
+-- ISCollapsableWindow titlebar/resize widgets we don't want.
+NR_VehicleMechanicsPanel = ISVehicleMechanics:derive("NR_VehicleMechanicsPanel")
 NR_VehicleMechanicsPanel.panels = {}  -- [playerNum] = instance
 
 local FONT_HGT_SMALL  = getTextManager():getFontHeight(UIFont.Small)
@@ -183,7 +190,7 @@ end
 
 function NR_VehicleMechanicsPanel:close()
     NR_VehicleMechanicsPanel.panels[self.playerNum] = nil
-    self:closeBase()
+    NR_BasePanel.closeBase(self)
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
@@ -352,42 +359,6 @@ function NR_VehicleMechanicsPanel:onMouseDown(x, y)
     self:selectPart(part)
 end
 
-function NR_VehicleMechanicsPanel:onRightMouseUp(x, y)
-    local playerObj = getSpecificPlayer(self.playerNum)
-    local part = self:getMouseOverPart(x, y)
-    self.context = nil
-    if part then
-        self:selectPart(part)
-        self:doPartContextMenu(part, x, y)
-    elseif ISVehicleMechanics.cheat then
-        if UIManager.getSpeedControls():getCurrentGameSpeed() == 0 then return end
-        self.context = ISContextMenu.get(self.playerNum, x + self:getAbsoluteX(), y + self:getAbsoluteY())
-        if self.vehicle:getScript() and self.vehicle:getScript():getWheelCount() > 0 then
-            if self.vehicle:getPartById("Engine") then
-                self.context:addOption("CHEAT: Get Key", playerObj, ISVehicleMechanics.onCheatGetKey, self.vehicle)
-                if self.vehicle:isHotwired() then
-                    self.context:addOption("CHEAT: Remove Hotwire", playerObj, ISVehicleMechanics.onCheatHotwire, self.vehicle, false, false)
-                else
-                    self.context:addOption("CHEAT: Hotwire", playerObj, ISVehicleMechanics.onCheatHotwire, self.vehicle, true, false)
-                end
-            end
-            self.context:addOption("CHEAT: Repair Vehicle", playerObj, ISVehicleMechanics.onCheatRepair, self.vehicle)
-            self.context:addOption("CHEAT: Set Rust", playerObj, ISVehicleMechanics.onCheatSetRust, self.vehicle)
-        end
-        self.context:addOption("CHEAT: Remove Vehicle", playerObj, ISVehicleMechanics.onCheatRemove, self.vehicle)
-    end
-    if not part and getDebug() then
-        if not self.context then
-            self.context = ISContextMenu.get(self.playerNum, x + self:getAbsoluteX(), y + self:getAbsoluteY())
-        end
-        if ISVehicleMechanics.cheat then
-            self.context:addOption("DBG: ISVehicleMechanics.cheat=false", playerObj, ISVehicleMechanics.onCheatToggle)
-        else
-            self.context:addOption("DBG: ISVehicleMechanics.cheat=true", playerObj, ISVehicleMechanics.onCheatToggle)
-        end
-    end
-end
-
 -- ----------------------------------------------------------------------------------------------------- --
 -- Joypad
 -- ----------------------------------------------------------------------------------------------------- --
@@ -465,16 +436,13 @@ function NR_VehicleMechanicsPanel:onKeyRelease(key)
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
--- Vanilla logic (delegated)
+-- Vanilla layout overrides (CAR_Y_OFFSET compensation)
 -- ----------------------------------------------------------------------------------------------------- --
 
-NR_VehicleMechanicsPanel.initParts                   = ISVehicleMechanics.initParts
-NR_VehicleMechanicsPanel.recalculGeneralCondition    = ISVehicleMechanics.recalculGeneralCondition
-NR_VehicleMechanicsPanel.checkEngineFull             = ISVehicleMechanics.checkEngineFull
-NR_VehicleMechanicsPanel.doPartContextMenu           = ISVehicleMechanics.doPartContextMenu
-NR_VehicleMechanicsPanel.doMenuTooltip               = ISVehicleMechanics.doMenuTooltip
-NR_VehicleMechanicsPanel.getConditionRGB             = ISVehicleMechanics.getConditionRGB
-NR_VehicleMechanicsPanel.roundContainerContentAmount = ISVehicleMechanics.roundContainerContentAmount
+-- All other ISVehicleMechanics methods (initParts, doPartContextMenu, renderPartDetail,
+-- selectPart, etc.) are inherited automatically and pick up any mod hook applied to
+-- ISVehicleMechanics.<method> at call time.
+
 -- Shift the car image down by CAR_Y_OFFSET so its visible content aligns with the info rect.
 function NR_VehicleMechanicsPanel:renderCarOverlay()
     local overlayName = self.vehicle:getScriptName()
@@ -496,15 +464,3 @@ end
 function NR_VehicleMechanicsPanel:isMouseOverPart(x, y, part)
     return ISVehicleMechanics.isMouseOverPart(self, x, y - CAR_Y_OFFSET, part)
 end
-
-NR_VehicleMechanicsPanel.renderCarOverlayTooltip     = ISVehicleMechanics.renderCarOverlayTooltip
-NR_VehicleMechanicsPanel.renderPartDetail            = ISVehicleMechanics.renderPartDetail
-NR_VehicleMechanicsPanel.getMouseOverPart            = ISVehicleMechanics.getMouseOverPart
-NR_VehicleMechanicsPanel.selectPart                  = ISVehicleMechanics.selectPart
-NR_VehicleMechanicsPanel.startFlashGreen             = ISVehicleMechanics.startFlashGreen
-NR_VehicleMechanicsPanel.startFlashRed               = ISVehicleMechanics.startFlashRed
-NR_VehicleMechanicsPanel.onListboxJoypadDirUp        = ISVehicleMechanics.onListboxJoypadDirUp
-NR_VehicleMechanicsPanel.onListboxJoypadDirDown      = ISVehicleMechanics.onListboxJoypadDirDown
-NR_VehicleMechanicsPanel.getWrench                   = ISVehicleMechanics.getWrench
-NR_VehicleMechanicsPanel.getScrewdriver              = ISVehicleMechanics.getScrewdriver
-NR_VehicleMechanicsPanel.getTirePump                 = ISVehicleMechanics.getTirePump
