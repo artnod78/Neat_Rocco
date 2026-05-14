@@ -88,19 +88,7 @@ description=[h2]Mod Compatibility[/h2]
 description=Mods that add content to the vanilla windows replaced by this mod may not be fully compatible.
 description=To request compatibility with a specific mod, post in the [url=https://steamcommunity.com/workshop/filedetails/discussion/3723726293/844005624123524284/]Mod Compatibility Requests[/url] discussion.
 description=
-description=[b]Compatible mods (tested):[/b]
-description=[list]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3721829036]STA Better Hutches[/url]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3388721641]Auto-Cook[/url]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3470852353]Improved Farming Info Window[/url]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3677430162]Armor Makes Sense[/url]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3387539308]AutoMechanics[/url]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3635856965]Better Auto Mechanics[/url]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3171167894]That DAMN Library[/url] (Ki5 vehicles)
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3488600400]TwisTonFire - Better Character Info[/url]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=2757712197]Vehicle Repair Overhaul[/url]
-description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3304580957]Standardized Vehicle Upgrades 3 - Core[/url]
-description=[/list]
+description=[b][url=https://steamcommunity.com/workshop/filedetails/discussion/3723726293/844005624123524284/]Compatible mods (tested)[/url][/b]
 description=
 description=[hr]
 description=[h2]Work In Progress[/h2]

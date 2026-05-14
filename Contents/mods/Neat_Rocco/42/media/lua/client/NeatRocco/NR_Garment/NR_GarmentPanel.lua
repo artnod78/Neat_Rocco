@@ -1,12 +1,14 @@
 -- NR_GarmentPanel.lua
 -- NeatUI replacement panel for ISGarmentUI.
+-- Derives from ISGarmentUI so any mod patching ISGarmentUI (doContextMenu, doPatch...)
+-- runs automatically (e.g. AutoTailoring's "Auto Sewing" menu entry).
 -- Displays clothing coverage, protection values, damage state, and bottom condition bars.
 
 require "ISUI/ISGarmentUI"
 require "NeatRocco/NR_Utils/NR_BasePanel"
 require "NeatRocco/NR_Config"
 
-NR_GarmentPanel = NR_BasePanel:derive("NR_GarmentPanel")
+NR_GarmentPanel = ISGarmentUI:derive("NR_GarmentPanel")
 
 local FONT_HGT_SMALL = getTextManager():getFontHeight(UIFont.Small)
 
@@ -121,6 +123,7 @@ function NR_GarmentPanel:new(x, y, character, clothing)
     self.__index = self
 
     o.character = character
+    o.chr       = character  -- alias required by ISGarmentUI / mod patches (AutoTailoring etc.)
     o.playerNum = playerNum
     o.clothing  = clothing
 
@@ -174,8 +177,30 @@ function NR_GarmentPanel:setBodyPartForAction(action, bodyPart)
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
--- Lifecycle  (initialise + createChildren héritées de NR_BasePanel)
+-- Lifecycle
 -- ----------------------------------------------------------------------------------------------------- --
+
+-- Bypass ISGarmentUI:initialise (which creates a vanilla listbox we don't use)
+function NR_GarmentPanel:initialise()
+    ISPanelJoypad.initialise(self)
+end
+
+-- Recopie de NR_BasePanel:createChildren (header NeatUI)
+function NR_GarmentPanel:createChildren()
+    local hh = NR_Config.headerHeight
+    self.header = NR_Header:new(0, 0, self.width, hh, self)
+    self.header:initialise()
+    self:addChild(self.header)
+    self.header:calculateLayout(self.width, hh)
+    if self.header.width > self.width then
+        self:setWidth(self.header.width)
+    end
+end
+
+-- Recopie de NR_BasePanel:prerender (background NeatUI)
+function NR_GarmentPanel:prerender()
+    NR_DrawUtils.prerenderPanelBody(self, NR_Config.headerHeight)
+end
 
 function NR_GarmentPanel:update()
     if not self.clothing or not self.clothing:isInPlayerInventory() then
@@ -186,102 +211,9 @@ function NR_GarmentPanel:update()
 end
 
 -- ----------------------------------------------------------------------------------------------------- --
--- Context menu (vanilla ISGarmentUI logic preserved 1:1)
+-- Context menu — inherited from ISGarmentUI (doContextMenu, doPatch).
+-- Mod patches on ISGarmentUI.doContextMenu (e.g. AutoTailoring's "Auto Sewing" entry) apply automatically.
 -- ----------------------------------------------------------------------------------------------------- --
-
-function NR_GarmentPanel:doPatch(fabric, thread, needle, part, context, submenu)
-    if not self.clothing:getFabricType() then return end
-    local hole  = self.clothing:getVisual():getHole(part) > 0
-    local patch = self.clothing:getPatchType(part)
-    local text, allText
-    if hole then
-        text    = getText("ContextMenu_PatchHole")
-        allText = getText("ContextMenu_PatchAllHoles") .. " " .. fabric:getDisplayName()
-    elseif not patch then
-        text    = getText("ContextMenu_AddPadding")
-        allText = getText("ContextMenu_AddPaddingAll") .. " " .. fabric:getDisplayName()
-    else
-        error "patch ~= nil"
-    end
-    if not submenu then
-        local option = context:addOption(text)
-        submenu = context:getNew(context)
-        context:addSubMenu(option, submenu)
-    end
-    local option = submenu:addOption(fabric:getDisplayName(), self.character, ISInventoryPaneContextMenu.repairClothing, self.clothing, part, fabric, thread, needle)
-    option.itemForTexture = fabric
-    local tooltip = ISInventoryPaneContextMenu.addToolTip()
-    if self.clothing:canFullyRestore(self.character, part, fabric) then
-        tooltip.description = getText("IGUI_perks_Tailoring") .. " :" .. self.character:getPerkLevel(Perks.Tailoring) .. " <LINE>" .. ISGarmentUI.ghs .. getText("Tooltip_FullyRestore")
-    else
-        tooltip.description = getText("IGUI_perks_Tailoring") .. " :" .. self.character:getPerkLevel(Perks.Tailoring) .. " <LINE>" .. ISGarmentUI.ghs .. getText("Tooltip_ScratchDefense") .. " +" .. Clothing.getScratchDefenseFromItem(self.character, fabric) .. " <LINE> " .. getText("Tooltip_BiteDefense") .. " +" .. Clothing.getBiteDefenseFromItem(self.character, fabric)
-    end
-    option.toolTip = tooltip
-    local allTooltip = ISInventoryPaneContextMenu.addToolTip()
-    if self.character:getInventory():getItemCount(fabric:getType(), true) > 1 then
-        if hole and self.clothing:getHolesNumber() > 1 then
-            local allOption = submenu:addOption(allText, self.character, ISInventoryPaneContextMenu.repairAllClothing, self.clothing, self.parts, fabric, thread, needle, true)
-            allOption.itemForTexture = fabric
-            allTooltip.description = getText("Tooltip_PatchAllHoles") .. " " .. fabric:getDisplayName()
-            allOption.toolTip = allTooltip
-        elseif not hole and not patch and ISGarmentUI:getPaddablePartsNumber(self.clothing, self.parts) > 1 then
-            local allOption = submenu:addOption(allText, self.character, ISInventoryPaneContextMenu.repairAllClothing, self.clothing, self.parts, fabric, thread, needle, false)
-            allOption.itemForTexture = fabric
-            allTooltip.description = getText("Tooltip_AddPaddingToAll") .. " " .. fabric:getDisplayName()
-            allOption.toolTip = allTooltip
-        end
-    end
-    return submenu
-end
-
-function NR_GarmentPanel:doContextMenu(part, x, y)
-    local context = ISContextMenu.get(self.character:getPlayerNum(), x, y)
-    local thread  = self.character:getInventory():getItemFromType("Thread", true, true) or self.character:getInventory():getItemFromTag(ItemTag.THREAD, true, true)
-    local needle  = self.character:getInventory():getItemFromType("Needle", true, true) or self.character:getInventory():getFirstTagRecurse(ItemTag.SEWING_NEEDLE)
-    local fabric1 = self.character:getInventory():getItemFromType("RippedSheets", true, true)
-    local fabric2 = self.character:getInventory():getItemFromType("DenimStrips", true, true)
-    local fabric3 = self.character:getInventory():getItemFromType("LeatherStrips", true, true)
-    local patch   = self.clothing:getPatchType(part)
-    if patch then
-        local removeOption = context:addOption(getText("ContextMenu_RemovePatch"), self.character, ISInventoryPaneContextMenu.removePatch, self.clothing, part, needle)
-        local tooltip = ISInventoryPaneContextMenu.addToolTip()
-        removeOption.toolTip = tooltip
-        local patchesCount = self.clothing:getPatchesNumber()
-        local removeAllOption, removeAllTooltip
-        if patchesCount > 1 then
-            removeAllOption = context:addOption(getText("ContextMenu_RemoveAllPatches"), self.character, ISInventoryPaneContextMenu.removeAllPatches, self.clothing, self.parts, needle)
-            removeAllTooltip = ISInventoryPaneContextMenu.addToolTip()
-            removeAllOption.toolTip = removeAllTooltip
-        end
-        if needle then
-            tooltip.description = getText("Tooltip_GetPatchBack", ISRemovePatch.chanceToGetPatchBack(self.character)) .. " <LINE>" .. ISGarmentUI.bhs .. getText("Tooltip_ScratchDefense") .. " -" .. patch:getScratchDefense() .. " <LINE> " .. getText("Tooltip_BiteDefense") .. " -" .. patch:getBiteDefense()
-            if removeAllTooltip then
-                removeAllTooltip.description = getText("Tooltip_GetPatchesBack", ISRemovePatch.chanceToGetPatchBack(self.character)) .. " <LINE>" .. ISGarmentUI.bhs .. getText("Tooltip_ScratchDefense") .. " -" .. (patch:getScratchDefense() * patchesCount) .. " <LINE> " .. getText("Tooltip_BiteDefense") .. " -" .. (patch:getBiteDefense() * patchesCount)
-            end
-        else
-            tooltip.description = getText("ContextMenu_CantRemovePatch")
-            removeOption.notAvailable = true
-            if removeAllOption then
-                removeAllTooltip.description = getText("ContextMenu_CantRemovePatch")
-                removeAllOption.notAvailable = true
-            end
-        end
-        return context
-    end
-    if not thread or not needle or (not fabric1 and not fabric2 and not fabric3) then
-        local patchOption = context:addOption(getText("ContextMenu_Patch"))
-        patchOption.notAvailable = true
-        local tooltip = ISInventoryPaneContextMenu.addToolTip()
-        tooltip.description = getText("ContextMenu_CantRepair")
-        patchOption.toolTip = tooltip
-        return context
-    end
-    local submenu
-    if fabric1 then submenu = self:doPatch(fabric1, thread, needle, part, context, submenu) end
-    if fabric2 then submenu = self:doPatch(fabric2, thread, needle, part, context, submenu) end
-    if fabric3 then submenu = self:doPatch(fabric3, thread, needle, part, context, submenu) end
-    return context
-end
 
 -- ----------------------------------------------------------------------------------------------------- --
 -- Mouse
@@ -390,7 +322,7 @@ function NR_GarmentPanel:render()
 
         -- Progress bar (active sewing action on this part)
         if bpa then
-            self:drawBar(self.listX, curY, self.width - self.listX - pad, barH, bpa.delta or 0, 0.2, 0.8, 0.4)
+            NR_DrawBar.drawBar(self, self.listX, curY, self.width - self.listX - pad, barH, bpa.delta or 0, 0.2, 0.8, 0.4)
             if bpa.jobType then
                 self:drawText(bpa.jobType, self.listX + pad, curY + math.floor((barH - FONT_HGT_SMALL) / 2), 1, 1, 1, 1, UIFont.Small)
             end
@@ -425,7 +357,7 @@ function NR_GarmentPanel:render()
 
     -- Separator before bottom bars
     curY = curY + 1
-    self:drawSeparator(curY)
+    NR_DrawUtils.drawSeparator(self, curY)
     curY = curY + pad
 
     -- Bottom 3 bars: Condition / Bloodiness / Dirtiness (widths pre-calculated in new())
@@ -437,10 +369,10 @@ function NR_GarmentPanel:render()
     local condPct  = clothing:getCondition() / clothing:getConditionMax()
     local bloodPct = clothing:getBloodlevel() / 100
     local dirtPct  = clothing:getDirtiness()  / 100
-    local cr, cg, cb = self:getBarColor(condPct)
-    self:drawBarWithLabel(self.bar1X, curY, self.barW1, barH, condPct,  math.floor(condPct  * 100) .. "%", cr,  cg,   cb)
-    self:drawBarWithLabel(self.bar2X, curY, self.barW2, barH, bloodPct, math.floor(bloodPct * 100) .. "%", 0.8, 0.1,  0.1)
-    self:drawBarWithLabel(self.bar3X, curY, self.barW3, barH, dirtPct,  math.floor(dirtPct  * 100) .. "%", 0.7, 0.45, 0.1)
+    local cr, cg, cb = NR_DrawBar.getBarColor(condPct)
+    NR_DrawBar.drawBarWithLabel(self, self.bar1X, curY, self.barW1, barH, condPct,  math.floor(condPct  * 100) .. "%", cr,  cg,   cb)
+    NR_DrawBar.drawBarWithLabel(self, self.bar2X, curY, self.barW2, barH, bloodPct, math.floor(bloodPct * 100) .. "%", 0.8, 0.1,  0.1)
+    NR_DrawBar.drawBarWithLabel(self, self.bar3X, curY, self.barW3, barH, dirtPct,  math.floor(dirtPct  * 100) .. "%", 0.7, 0.45, 0.1)
 
     curY = curY + barH + pad
     self:setHeight(curY)
@@ -455,7 +387,29 @@ function NR_GarmentPanel:close()
     if ISGarmentUI.windows[pn] == self then
         ISGarmentUI.windows[pn] = nil
     end
-    self:closeBase()
+    self:setVisible(false)
+    self:removeFromUIManager()
+    if JoypadState.players[pn + 1] then
+        if isJoypadFocusOnElementOrDescendant(pn, self) then
+            setJoypadFocus(pn, nil)
+        end
+    end
 end
 
--- (onGainJoypadFocus, onLoseJoypadFocus, onJoypadDown, isKeyConsumed, onKeyRelease héritées de NR_BasePanel)
+-- ----------------------------------------------------------------------------------------------------- --
+-- Joypad / keyboard (recopie de NR_BasePanel — overrides ISGarmentUI joypad handling)
+-- ----------------------------------------------------------------------------------------------------- --
+
+function NR_GarmentPanel:onGainJoypadFocus(_) self.drawJoypadFocus = true  end
+function NR_GarmentPanel:onLoseJoypadFocus(_) self.drawJoypadFocus = false end
+
+function NR_GarmentPanel:onJoypadDown(button, joypadData)
+    if button == Joypad.BButton then self:close() ; return end
+    ISPanelJoypad.onJoypadDown(self, button, joypadData)
+end
+
+function NR_GarmentPanel:isKeyConsumed(_) return false end
+
+function NR_GarmentPanel:onKeyRelease(key)
+    if key == Keyboard.KEY_ESCAPE then self:close() ; return true end
+end
