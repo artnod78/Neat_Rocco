@@ -11,10 +11,10 @@ ISSearchWindow._NR_old_destroyUI    = ISSearchWindow._NR_old_destroyUI    or ISS
 local function NR_createSearchUI(playerNum)
     local character = getSpecificPlayer(playerNum)
     if character and not NR_SearchPanel.players[character] then
-        local panel = NR_SearchPanel:new(character)
-        panel:initialise()
-        panel:addToUIManager()
-        panel:setVisible(false)
+        -- ISSearchWindow.new calls :initialise() which we override to chain vanilla +
+        -- mods (Auto Forage etc.) and then apply NeatUI skin. addToUIManager and
+        -- setVisible(false) are also done by ISSearchWindow.initialise.
+        NR_SearchPanel:new(character)
     end
 end
 
