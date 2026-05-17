@@ -37,4 +37,4 @@ local function NR_applyGarmentToggle(enabled)
     end
 end
 
-NR_RegisterToggleCallback(NR_applyGarmentToggle)
+NR_RegisterWindowToggleCallback("Garment", NR_applyGarmentToggle)

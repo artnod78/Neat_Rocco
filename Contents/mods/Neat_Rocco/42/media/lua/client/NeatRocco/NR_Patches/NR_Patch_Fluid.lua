@@ -34,5 +34,5 @@ local function NR_applyFluidTransferToggle(enabled)
     end
 end
 
-NR_RegisterToggleCallback(NR_applyFluidContainerToggle)
-NR_RegisterToggleCallback(NR_applyFluidTransferToggle)
+NR_RegisterWindowToggleCallback("Fluid", NR_applyFluidContainerToggle)
+NR_RegisterWindowToggleCallback("Fluid", NR_applyFluidTransferToggle)

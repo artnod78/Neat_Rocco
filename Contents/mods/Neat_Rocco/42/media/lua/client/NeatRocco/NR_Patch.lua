@@ -25,7 +25,9 @@ require "NeatRocco/NR_Fitness/NR_FitnessPanel"
 -- ##########################################
 -- Redirects VanillaClass:new(...) to ReplacementClass:new(...).
 -- Subclasses that call VanillaClass.new(self, ...) pass through unchanged.
-local function NR_MakePatch(VanillaClass, ReplacementClass)
+-- If windowId is provided, the patch is bound to the per-window toggle
+-- (global AND useXxx); otherwise it follows the global toggle only.
+local function NR_MakePatch(VanillaClass, ReplacementClass, windowId)
     VanillaClass._NR_old_new = VanillaClass._NR_old_new or VanillaClass.new
     local function patched(self, ...)
         if self == VanillaClass then
@@ -33,24 +35,30 @@ local function NR_MakePatch(VanillaClass, ReplacementClass)
         end
         return VanillaClass._NR_old_new(self, ...)
     end
-    NR_RegisterToggleCallback(function(enabled)
+    local function apply(enabled)
         VanillaClass.new = enabled and patched or VanillaClass._NR_old_new
-    end)
+    end
+    if windowId then
+        NR_RegisterWindowToggleCallback(windowId, apply)
+    else
+        NR_RegisterToggleCallback(apply)
+    end
 end
 
-NR_MakePatch(ISColorPicker,       NR_ColorPicker)
-NR_MakePatch(ISTextBox,           NR_TextBox)
-NR_MakePatch(ISModalRichText,     NR_ModalRichText)
-NR_MakePatch(ISModalDialog,       NR_ConfirmDialog)
-NR_MakePatch(ISBombTimerDialog,   NR_BombTimerDialog)
-NR_MakePatch(ISAlarmClockDialog,  NR_AlarmClockDialog)
-NR_MakePatch(ISDigitalCode,       NR_DigitalCode)
-NR_MakePatch(ISFitnessUI,         NR_FitnessPanel)
+NR_MakePatch(ISColorPicker,       NR_ColorPicker,      "Dialogs")
+NR_MakePatch(ISTextBox,           NR_TextBox,          "Dialogs")
+NR_MakePatch(ISModalRichText,     NR_ModalRichText,    "Dialogs")
+NR_MakePatch(ISModalDialog,       NR_ConfirmDialog,    "Dialogs")
+NR_MakePatch(ISBombTimerDialog,   NR_BombTimerDialog,  "Dialogs")
+NR_MakePatch(ISAlarmClockDialog,  NR_AlarmClockDialog, "Dialogs")
+NR_MakePatch(ISDigitalCode,       NR_DigitalCode,      "Dialogs")
+NR_MakePatch(ISFitnessUI,         NR_FitnessPanel,     "Fitness")
 
 -- ##############################
 -- ### Per-feature patches    ###
 -- ##############################
 require "NeatRocco/NR_Patches/NR_Patch_Livestock"
+require "NeatRocco/NR_Patches/NR_Patch_AnimalUI"
 require "NeatRocco/NR_Patches/NR_Patch_Hutch"
 require "NeatRocco/NR_Patches/NR_Patch_ButcherHook"
 require "NeatRocco/NR_Patches/NR_Patch_Generator"

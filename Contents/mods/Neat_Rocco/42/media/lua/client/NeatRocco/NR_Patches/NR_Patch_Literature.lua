@@ -39,4 +39,4 @@ local function NR_applyLiteratureToggle(enabled)
     end
 end
 
-NR_RegisterToggleCallback(NR_applyLiteratureToggle)
+NR_RegisterWindowToggleCallback("CharInfo", NR_applyLiteratureToggle)

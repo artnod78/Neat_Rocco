@@ -46,4 +46,4 @@ local function NR_applyGeneratorToggle(enabled)
     end
 end
 
-NR_RegisterToggleCallback(NR_applyGeneratorToggle)
+NR_RegisterWindowToggleCallback("Generator", NR_applyGeneratorToggle)

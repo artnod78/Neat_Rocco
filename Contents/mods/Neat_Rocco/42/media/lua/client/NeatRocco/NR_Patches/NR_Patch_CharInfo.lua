@@ -49,4 +49,4 @@ local function NR_applyCharInfoToggle(enabled)
     end
 end
 
-NR_RegisterToggleCallback(NR_applyCharInfoToggle)
+NR_RegisterWindowToggleCallback("CharInfo", NR_applyCharInfoToggle)

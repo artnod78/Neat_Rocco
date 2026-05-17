@@ -391,7 +391,11 @@ end
 function NR_LiteraturePanel:close()
     self:setLists()
     self:removeFromUIManager()
-    -- Pas de destroy() : le panel est un singleton stocké sur ISCharacterScreen
+    -- Clear the singleton reference on ISCharacterScreen so that toggling
+    -- useLiterature off lets the vanilla onShowLiterature build a fresh ISLiteratureUI.
+    if self.owner and self.owner.literatureUI == self then
+        self.owner.literatureUI = nil
+    end
 end
 
 -- ----------------------------------------------------------------------------------------------------- --

@@ -35,4 +35,4 @@ local function NR_applyAnimalZoneFirstInfoToggle(enabled)
     ISAnimalZoneFirstInfo.showUI = enabled and NR_showAnimalZoneFirstInfo or ISAnimalZoneFirstInfo._NR_old_showUI
 end
 
-NR_RegisterToggleCallback(NR_applyAnimalZoneFirstInfoToggle)
+NR_RegisterWindowToggleCallback("Livestock", NR_applyAnimalZoneFirstInfoToggle)

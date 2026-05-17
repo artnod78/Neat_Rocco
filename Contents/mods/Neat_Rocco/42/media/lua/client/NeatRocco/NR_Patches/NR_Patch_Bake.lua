@@ -63,4 +63,4 @@ local function NR_applyBakeToggle(enabled)
     end
 end
 
-NR_RegisterToggleCallback(NR_applyBakeToggle)
+NR_RegisterWindowToggleCallback("Bake", NR_applyBakeToggle)

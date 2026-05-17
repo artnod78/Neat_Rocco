@@ -98,7 +98,7 @@ local function NR_applyMechToggle(enabled)
     NR_applyEngineDoorPatch(enabled)
 end
 
-NR_RegisterToggleCallback(NR_applyMechToggle)
+NR_RegisterWindowToggleCallback("Mech", NR_applyMechToggle)
 
 -- Re-apply once Vehicles table is loaded (server/Vehicles/Vehicles.lua loads after us)
-Events.OnGameStart.Add(function() NR_applyEngineDoorPatch(NR_isEnabled()) end)
+Events.OnGameStart.Add(function() NR_applyEngineDoorPatch(NR_isWindowEnabled("Mech")) end)

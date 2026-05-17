@@ -53,4 +53,4 @@ local function NR_applyBBQToggle(enabled)
     end
 end
 
-NR_RegisterToggleCallback(NR_applyBBQToggle)
+NR_RegisterWindowToggleCallback("Bake", NR_applyBBQToggle)

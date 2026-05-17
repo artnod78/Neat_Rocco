@@ -35,4 +35,4 @@ local function NR_applyAnimalTracksToggle(enabled)
     end
 end
 
-NR_RegisterToggleCallback(NR_applyAnimalTracksToggle)
+NR_RegisterWindowToggleCallback("Search", NR_applyAnimalTracksToggle)

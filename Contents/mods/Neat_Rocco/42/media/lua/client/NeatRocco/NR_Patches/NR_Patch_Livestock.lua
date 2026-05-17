@@ -4,7 +4,6 @@
 
 require "NeatRocco/NR_Livestock/NR_LivestockZonePanel"
 require "NeatRocco/NR_Livestock/NR_CheckZonePanel"
-require "NeatRocco/NR_Livestock/NR_AnimalUI"
 require "NeatRocco/NR_Livestock/NR_TrailerPanel"
 require "NeatRocco/NR_Livestock/NR_FeedingTroughPanel"
 
@@ -12,8 +11,6 @@ require "NeatRocco/NR_Livestock/NR_FeedingTroughPanel"
 ISDesignationZonePanel._NR_old_toggleZoneUI                    = ISDesignationZonePanel._NR_old_toggleZoneUI                    or ISDesignationZonePanel.toggleZoneUI
 ISDesignationZonePanel._NR_old_OnDesignationZoneUpdatedNetwork = ISDesignationZonePanel._NR_old_OnDesignationZoneUpdatedNetwork or ISDesignationZonePanel.OnDesignationZoneUpdatedNetwork
 AnimalContextMenu._NR_old_onCheckZone                          = AnimalContextMenu._NR_old_onCheckZone                          or AnimalContextMenu.onCheckZone
-AnimalContextMenu._NR_old_onAnimalInfo                         = AnimalContextMenu._NR_old_onAnimalInfo                         or AnimalContextMenu.onAnimalInfo
-ISOpenAnimalInfo._NR_old_perform                               = ISOpenAnimalInfo._NR_old_perform                               or ISOpenAnimalInfo.perform
 ISCheckAnimalInsideTrailer._NR_old_perform                     = ISCheckAnimalInsideTrailer._NR_old_perform                     or ISCheckAnimalInsideTrailer.perform
 ISFeedingTroughMenu._NR_old_onTroughInfo                       = ISFeedingTroughMenu._NR_old_onTroughInfo                       or ISFeedingTroughMenu.onInfo
 
@@ -70,35 +67,6 @@ local function NR_onCheckZone(zone, playerObj)
     ISAnimalZoneFirstInfo.showUI(playerNum, false)
 end
 
-local function NR_onAnimalInfo(animal, chr)
-    local playerNum = chr:getPlayerNum()
-    local ui = NR_AnimalUI:new(getPlayerScreenLeft(playerNum)+100, getPlayerScreenTop(playerNum)+100, animal, chr)
-    ui:initialise()
-    ui:addToUIManager()
-    if getJoypadData(playerNum) then
-        ui.prevFocus = getJoypadFocus(playerNum)
-        setJoypadFocus(playerNum, ui)
-    end
-end
-
-local function NR_animalInfoPerform(self)
-    local ui = NR_AnimalUI:new(
-        getPlayerScreenLeft(self.playerNum) + 100,
-        getPlayerScreenTop(self.playerNum) + 100,
-        self.animal, self.player
-    )
-    ui:initialise()
-    ui:addToUIManager()
-    ui.prevFocus = self.prevFocus
-    if getJoypadData(self.playerNum) then
-        if self.prevFocus ~= nil and (self.prevFocus.Type == "ISVehicleAnimalUI" or self.prevFocus.Type == "NR_TrailerPanel") then
-            self.prevFocus:setVisible(false)
-        end
-        setJoypadFocus(self.playerNum, ui)
-    end
-    ISBaseTimedAction.perform(self)
-end
-
 local function NR_onTroughInfo(trough, chr)
     local playerNum = chr:getPlayerNum()
     local sw = getCore():getScreenWidth()
@@ -127,22 +95,18 @@ local function NR_trailerPerform(self)
     end
 end
 
--- Toggle callback: swap between NR overrides and vanilla
+-- Livestock panels (zone panel, check zone, trailer, feeding trough) - controlled by per-window toggle
 local function NR_applyLivestockToggle(enabled)
     if enabled then
         ISDesignationZonePanel.toggleZoneUI                    = NR_toggleZoneUI
         ISDesignationZonePanel.OnDesignationZoneUpdatedNetwork = NR_OnDesignationZoneUpdatedNetwork
         AnimalContextMenu.onCheckZone                          = NR_onCheckZone
-        AnimalContextMenu.onAnimalInfo                         = NR_onAnimalInfo
-        ISOpenAnimalInfo.perform                               = NR_animalInfoPerform
         ISCheckAnimalInsideTrailer.perform                     = NR_trailerPerform
         ISFeedingTroughMenu.onInfo                             = NR_onTroughInfo
     else
         ISDesignationZonePanel.toggleZoneUI                    = ISDesignationZonePanel._NR_old_toggleZoneUI
         ISDesignationZonePanel.OnDesignationZoneUpdatedNetwork = ISDesignationZonePanel._NR_old_OnDesignationZoneUpdatedNetwork
         AnimalContextMenu.onCheckZone                          = AnimalContextMenu._NR_old_onCheckZone
-        AnimalContextMenu.onAnimalInfo                         = AnimalContextMenu._NR_old_onAnimalInfo
-        ISOpenAnimalInfo.perform                               = ISOpenAnimalInfo._NR_old_perform
         ISCheckAnimalInsideTrailer.perform                     = ISCheckAnimalInsideTrailer._NR_old_perform
         ISFeedingTroughMenu.onInfo                             = ISFeedingTroughMenu._NR_old_onTroughInfo
         if NR_LivestockZonePanel.instance and NR_LivestockZonePanel.instance:getIsVisible() then
@@ -151,4 +115,4 @@ local function NR_applyLivestockToggle(enabled)
     end
 end
 
-NR_RegisterToggleCallback(NR_applyLivestockToggle)
+NR_RegisterWindowToggleCallback("Livestock", NR_applyLivestockToggle)

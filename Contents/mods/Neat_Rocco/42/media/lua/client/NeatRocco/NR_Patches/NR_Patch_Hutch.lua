@@ -37,4 +37,4 @@ local function NR_applyHutchToggle(enabled)
     end
 end
 
-NR_RegisterToggleCallback(NR_applyHutchToggle)
+NR_RegisterWindowToggleCallback("Hutch", NR_applyHutchToggle)

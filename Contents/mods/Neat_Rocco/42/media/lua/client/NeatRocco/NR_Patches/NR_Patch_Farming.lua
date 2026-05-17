@@ -39,4 +39,4 @@ local function NR_applyFarmingToggle(enabled)
     end
 end
 
-NR_RegisterToggleCallback(NR_applyFarmingToggle)
+NR_RegisterWindowToggleCallback("Farming", NR_applyFarmingToggle)

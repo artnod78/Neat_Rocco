@@ -41,4 +41,4 @@ local function NR_applyButcherHookToggle(enabled)
     end
 end
 
-NR_RegisterToggleCallback(NR_applyButcherHookToggle)
+NR_RegisterWindowToggleCallback("ButcherHook", NR_applyButcherHookToggle)

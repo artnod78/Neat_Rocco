@@ -76,4 +76,4 @@ local function NR_applySearchToggle(enabled)
     end
 end
 
-NR_RegisterToggleCallback(NR_applySearchToggle)
+NR_RegisterWindowToggleCallback("Search", NR_applySearchToggle)
